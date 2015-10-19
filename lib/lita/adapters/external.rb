@@ -3,7 +3,6 @@ module Lita
     class External < Adapter
       def initialize(*)
         super
-        @redis = Redis::Namespace.new('messages', redis: robot.redis)
       end
 
       def real_adapter
@@ -16,9 +15,15 @@ module Lita
 
         @running = true
         @stopping = false
+        log.info("Listening to redis queue: `messages:inbound`")
         until @stopping
-          if result = redis.blpop('inbound', timeout: 1)
-            handle_inbound_message(result.last)
+          begin
+            if result = Lita.redis.blpop('messages:inbound', timeout: 1)
+              handle_inbound_message(result.last)
+            end
+          rescue => error
+            Lita.logger.error("Inbound message failed: #{error.class}: #{error.message}")
+            Lita.config.robot.error_handler(error)
           end
         end
       end
@@ -34,6 +39,7 @@ module Lita
       def shut_down
         return unless @running
 
+        log.info("Shutting down")
         @stopping = true
         robot.trigger(:disconnected)
       end
@@ -41,14 +47,14 @@ module Lita
       private
 
       def handle_inbound_message(payload)
-        message = Marshal.load(payload)
+        message = ::Lita::External.load_message(payload, robot: robot)
+        log.debug("processing inbound message from: #{message.user.mention_name}")
         robot.receive(message)
-      rescue => error
-        robot.config.robot.error_handler.call(error)
       end
 
       def rpc(method, *args)
-        redis.rpush('outbound', Marshal.dump([method, args]))
+        Lita.logger.info("Putting outbound message into the queue: #{method}(#{args.map(&:inspect).join(', ')})")
+        Lita.redis.rpush('messages:outbound', Marshal.dump([method, args]))
       end
     end
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift(File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib'))
+
+require 'lita/external'
+
+exit Lita::External::CLI.run(ARGV) || 0
