@@ -1,7 +1,7 @@
-require "lita/external/version"
+require 'lita/external/version'
+require 'lita/adapters/external'
 
 module Lita
   module External
-    # Your code goes here...
   end
 end
