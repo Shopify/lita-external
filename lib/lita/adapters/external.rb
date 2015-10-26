@@ -18,7 +18,7 @@ module Lita
         log.info("Listening to redis queue: `messages:inbound`")
         until @stopping
           begin
-            if result = Lita.redis.blpop('messages:inbound', timeout: 1)
+            if result = Lita::External.blocking_redis.blpop('messages:inbound', timeout: 1)
               handle_inbound_message(result.last)
             end
           rescue => error

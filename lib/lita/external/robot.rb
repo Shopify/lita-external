@@ -22,7 +22,7 @@ module Lita
           Lita.logger.info("Watching outbound queue")
           until @stopping
             begin
-              if command = Lita.redis.blpop('messages:outbound', timeout: 1)
+              if command = External.blocking_redis.blpop('messages:outbound', timeout: 1)
                 process_outbound_command(command.last)
               end
             rescue => error
