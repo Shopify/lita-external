@@ -1,8 +1,14 @@
 module Lita
   module Adapters
     class External < Adapter
+      config :min_threads
+      config :max_threads
       def initialize(*)
         super
+        @thread_pool = ::Puma::ThreadPool.new((config.min_threads || 8).to_i, (config.max_threads || 16).to_i) do |message|
+          log.debug("processing inbound message from: #{message.user.mention_name}")
+          robot.receive(message)
+        end
       end
 
       def real_adapter
@@ -41,6 +47,7 @@ module Lita
 
         log.info("Shutting down")
         @stopping = true
+        @thread_pool.shutdown
         robot.trigger(:disconnected)
       end
 
@@ -48,8 +55,8 @@ module Lita
 
       def handle_inbound_message(payload)
         message = ::Lita::External.load_message(payload, robot: robot)
-        log.debug("processing inbound message from: #{message.user.mention_name}")
-        robot.receive(message)
+        log.debug("enqueuing inbound message from: #{message.user.mention_name}")
+        @thread_pool << message
       end
 
       def rpc(method, *args)
