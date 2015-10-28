@@ -38,10 +38,6 @@ module Lita
         Lita.logger.debug("Triggering #{command}")
         adapter.public_send(command, *args)
       end
-
-      def run_app
-        # We don't any webserver from here
-      end
     end
   end
 end
