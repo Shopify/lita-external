@@ -19,9 +19,12 @@ module Lita
       def run
         return if @running || @stopping
 
+        robot.trigger(:worker_loaded)
+
         @running = true
         @stopping = false
         log.info("Listening to redis queue: `messages:inbound`")
+        robot.trigger(:connected)
         until @stopping
           begin
             if result = Lita::External.blocking_redis.blpop('messages:inbound', timeout: 1)
