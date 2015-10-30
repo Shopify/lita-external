@@ -8,6 +8,9 @@ module Lita
 
       def run
         @stopping = false
+
+        trigger(:master_loaded)
+
         watch_outbound_queue
         super
       end
