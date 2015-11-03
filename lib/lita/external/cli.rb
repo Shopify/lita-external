@@ -53,6 +53,7 @@ module Lita
         load_lita_config(options)
         set_adapter(options)
         robot = Lita::External::Robot.new
+        robot.initialize_leader_lock
         p robot.send(:adapter)
         robot.run
         0

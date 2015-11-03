@@ -1,9 +1,26 @@
+require 'zk'
+
 module Lita
   module External
     class Robot < ::Lita::Robot
+
+      def initialize_leader_lock
+        return unless ENV['ZOOKEEPER_PEERS']
+        zk_peers = ENV['ZOOKEEPER_PEERS']
+        zk_lock = "lita_#{config.robot.name}_#{ENV['ENV']}"
+        @locker = ZK::Locker.exclusive_locker(ZK.new(zk_peers), zk_lock)
+        @locker.lock(wait: false)
+      end
+
       def receive(message)
-        Lita.logger.debug("Put inbound message from #{message.user.mention_name} into the queue")
-        Lita.redis.rpush('messages:inbound', External.dump_message(message))
+        process_message = true
+        process_message = @locker.locked? if @locker
+        if process_message
+          Lita.logger.info("Put inbound message to #{message.user.mention_name} into the queue")
+          Lita.redis.rpush('messages:inbound', External.dump_message(message))
+        else
+          Lita.logger.info("Skipping inbound message to #{message.user.mention_name}")
+        end
       end
 
       def run
