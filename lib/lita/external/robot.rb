@@ -1,9 +1,23 @@
 module Lita
   module External
     class Robot < ::Lita::Robot
+
+      class Ballot
+        attr_accessor :veto
+        def initialize
+          @veto = false
+        end
+      end
+
       def receive(message)
-        Lita.logger.debug("Put inbound message from #{message.user.mention_name} into the queue")
-        Lita.redis.rpush('messages:inbound', External.dump_message(message))
+        ballot = Ballot.new
+        trigger(:master_receive, ballot: ballot)
+        if ballot.veto
+          Lita.logger.debug("Ignoring vetoed message")
+        else
+          Lita.logger.debug("Put inbound message from #{message.user.mention_name} into the queue")
+          Lita.redis.rpush('messages:inbound', External.dump_message(message))
+        end
       end
 
       def run
