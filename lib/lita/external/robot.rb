@@ -54,7 +54,7 @@ module Lita
 
       def process_outbound_command(payload)
         command, args = Marshal.load(payload)
-        Lita.logger.debug("Triggering #{command}")
+        Lita.logger.info("Triggering #{command}, #{args.inspect}")
         adapter.public_send(command, *args)
       end
     end
