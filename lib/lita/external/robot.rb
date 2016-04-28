@@ -39,23 +39,20 @@ module Lita
           Lita.logger.info("Watching outbound queue")
           until @stopping
             begin
-              if command = External.blocking_redis.blpop('messages:outbound', timeout: 1)
-                process_outbound_command(command.last)
+              if payload = External.blocking_redis.blpop('messages:outbound', timeout: 1)
+                command, args = Marshal.load(payload.last)
+                Lita.logger.debug("Triggering #{command}")
+                adapter.public_send(command, *args)
               end
             rescue => error
               Lita.logger.error("Outbound message failed: #{error.class}: #{error.message}")
+              Lita.logger.debug { "Outbound message failed: command=#{command} args=#{args.inspect}" }
               if Lita.config.robot.error_handler
                 Lita.config.robot.error_handler.call(error)
               end
             end
           end
         end
-      end
-
-      def process_outbound_command(payload)
-        command, args = Marshal.load(payload)
-        Lita.logger.debug("Triggering #{command}")
-        adapter.public_send(command, *args)
       end
     end
   end
