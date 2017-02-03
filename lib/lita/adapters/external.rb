@@ -32,7 +32,14 @@ module Lita
             end
           rescue => error
             Lita.logger.error("Inbound message failed: #{error.class}: #{error.message}")
-            Lita.config.robot.error_handler(error)
+            if Lita.config.robot.error_handler
+              case Lita.config.robot.error_handler.arity
+              when 1, -1
+                Lita.config.robot.error_handler.call(error)
+              when 2, -2
+                Lita.config.robot.error_handler.call(error, {})
+              end 
+            end
           end
         end
       end
