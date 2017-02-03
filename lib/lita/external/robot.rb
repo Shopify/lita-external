@@ -45,7 +45,12 @@ module Lita
             rescue => error
               Lita.logger.error("Outbound message failed: #{error.class}: #{error.message}")
               if Lita.config.robot.error_handler
-                Lita.config.robot.error_handler.call(error)
+                case Lita.config.robot.error_handler.arity
+                when 1, -1
+                  Lita.config.robot.error_handler.call(error)
+                when 2, -2
+                  Lita.config.robot.error_handler.call(error, {})
+                end 
               end
             end
           end
