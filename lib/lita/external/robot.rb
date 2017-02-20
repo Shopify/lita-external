@@ -1,6 +1,7 @@
 module Lita
   module External
     class Robot < ::Lita::Robot
+      CommandFailed = Class.new(StandardError)
 
       class Ballot
         attr_accessor :veto
@@ -42,7 +43,11 @@ module Lita
               if payload = External.blocking_redis.blpop('messages:outbound', timeout: 1)
                 command, args = Marshal.load(payload.last)
                 Lita.logger.debug("Triggering #{command}")
-                adapter.public_send(command, *args)
+                begin
+                  adapter.public_send(command, *args)
+                rescue RuntimeError => error
+                  raise CommandFailed, "#{command}(#{args.map(&:inspect).join(', ')}) failed because: #{error.message}"
+                end
               end
             rescue => error
               Lita.logger.error("Outbound message failed: #{error.class}: #{error.message}")
