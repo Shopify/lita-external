@@ -1,3 +1,5 @@
+require 'puma/thread_pool'
+
 module Lita
   module Adapters
     class External < Adapter
