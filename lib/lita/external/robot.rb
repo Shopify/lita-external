@@ -1,5 +1,14 @@
 module Lita
   module External
+    class ::Lita::Robot
+      def run(&block)
+        run_app
+        adapter.run(&block)
+      rescue Interrupt
+        shut_down
+      end
+    end
+
     class Robot < ::Lita::Robot
       CommandFailed = Class.new(StandardError)
 
@@ -26,8 +35,9 @@ module Lita
 
         trigger(:master_loaded)
 
-        watch_outbound_queue
-        super
+        super do
+          watch_outbound_queue
+        end
       end
 
       def shut_down
